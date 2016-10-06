@@ -1,0 +1,47 @@
+{
+  "name": "proyecto",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node ./bin/www",
+    "test": "mocha"
+  },
+  "dependencies": {
+    "body-parser": "~1.15.1",
+    "cookie-parser": "~1.4.3",
+    "debug": "~2.2.0",
+    "express": "~4.13.4",
+    "jade": "~1.11.0",
+    "morgan": "~1.7.0",
+    "serve-favicon": "~2.3.0",
+    "app.json": "~1.2.1",
+    "mocha": "~2.1.x",
+    "nodeo": "0.0.5",
+    "winston": "^0.9.0",
+    "winston-irc": "^0.3.4",
+    "winston-loggly": "^1.0.5",
+    "chai":"~1.8.1",
+    "connect-flash": "~0.1.1",
+    "mocha":"~1.14.0",
+    "mongoose":"~4.4.4",
+    "passport":"~0.3.2",
+    "passport-local":"~1.0.0",
+    "passport-local-mongoose":"~1.0.0",
+    "express-session":"~1.10.1"
+  },
+  "engines":{
+    "node": ">=0.10.x",
+    "npm": ">= 1.0.0"
+  },
+  "keywords": [
+    "node",
+    "heroku",
+    "openshift",
+    "node.js",
+    "express"
+  ],
+  "devDependencies":{
+    "supertest": "~0.15.0",
+    "should": "~4.6.2"
+  }
+}

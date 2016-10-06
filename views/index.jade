@@ -1,0 +1,280 @@
+extends layout
+
+block content
+  div.container
+    div.header.clearfix
+      nav
+        ul.nav.nav-pills.pull-right
+          li.active(role='presentation')
+            a(href='#') Home
+          li(role='presentation')
+            a(href='/') Restart
+          li(role='presentation')
+            a(href='https://github.com/mariosky/splash-volunteer') Fork in Github
+          li(role='presentation')
+            if (!user)
+                a(href="/login") Login/Register
+            if (user)
+                  a(href="/logout") Log Out
+          &nbsp;&nbsp;&nbsp;
+
+          if (user)
+                    script(src="/javascripts/lvl.js")
+                    h4 Welcome  #{user.username},  your Score is:
+                      span#score
+
+
+
+
+
+
+        h3.text-muted An experiment in distributed evolutionary computation
+        span#ips.label.label-info  0 User(s) Collaborating
+    h1.page-header How are we doing?
+    //----
+    //-- WORKER 1--
+    //----
+    div.row
+      div.col-md-12
+        div.panel.panel-default
+          div.panel-heading
+            i.fa.fa-cog  Worker
+            span#worker_status.label.label-info  status
+          div.panel-body
+            div.row
+              div.col-md-4
+                h4 Worker information
+                ul.list-group
+                  li.list-group-item Population size
+                    span#worker_population_size.badge
+                  li.list-group-item Current generation
+                    span#worker_current_generation.badge
+                  li.list-group-item Best fitness
+                    span#worker_current_best.badge
+                  li.list-group-item Number of solutions found
+                    span#number_of_solutions_found.badge  0
+              div.col-md-4
+                h4 Fitness
+                canvas#fitness.worker_line
+              div.col-md-4
+                h4 Best Chromosome
+                canvas#chromosome.worker_line
+            div.row
+              div.col-md-2
+                button#re-start.btn.btn-danger.btn-sm(type='button') Re-start
+
+    div.row
+      div.col-md-8
+        div.panel.panel-default
+          div.panel-heading
+            h4#population-w2 About This
+          div.panel-body
+
+            | This is an experiment in distributed evolutionary
+            | computation where you're contributing by just visiting this
+            | page. You can read about it in
+            a(href='http://arxiv.org/abs/1503.06424')  this paper.
+            |  Your browser will be evaluating a population of
+            em   chromosome,
+            em   mutating
+            |  and mixing them to create a new population in an
+            a(href='https://en.wikipedia.org/wiki/Evolutionary_algorithm')   evolutionary algorithm
+            |  that sends every
+            code  n
+            |  generations the best chromosome to the server, receiving a
+            |  random one. Each row above represents a worker process showing the best chromosome so
+            |  far in shades of gray. The best one will be all black; the
+            |  algorithm of the worker will stop when it finds it. You can press Re-start in any moment to
+            |  replace a worker with a new one.
+
+      div.col-md-4
+        div.panel.panel-default
+          div.panel-heading
+            h4
+              i.fa.fa-cog  Get the data
+          div.panel-body
+            | Processed and raw data will be
+            a(href='https://github.com/mariosky/splash-volunteer/tree/data')  available from GitHub
+            |  Please use
+            a(href='https://github.com/mariosky/splash-volunteer/issues')  the issues section for suggestions and questions, as well as feature requests.
+    footer.footer
+      div.container
+        p#footer1.text-centered.text-muted  Grab the code and data in
+          a(href='https://github.com/mariosky/splash-volunteer')  GitHub.
+          |  This is free software under the
+          a(href='http://www.gnu.org/licenses/')  Affero GPL license
+
+
+
+  // jQuery (necessary for Bootstrap's JavaScript plugins)
+  script(src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js")
+  // Include all compiled plugins (below), or include individual files as needed
+  script(src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js")
+  script.
+    var fitness = document.getElementById('fitness').getContext('2d');
+    var chromosome = document.getElementById('chromosome').getContext('2d');
+    //char data
+    fitness_data = {
+      labels: [],
+      datasets: [
+        {
+          fillColor: "rgba(172,194,132,0.4)",
+          strokeColor: "#ACC26D",
+          pointColor: "#fff",
+          pointStrokeColor: "#9DB86D",
+          data: []
+        }
+      ]
+    };
+
+    fitness_chart = new Chart(fitness).Line(fitness_data, {
+      responsive: false,
+      animation: false,
+      maintainAspectRatio: true
+    });
+
+    chromosome_data = {
+      labels: Array.apply(null, new Array(160)).map(String.prototype.valueOf, ""),
+      datasets: [
+        {
+          fillColor: "rgba(0,0,0,0.8)",
+          strokeColor: "rgba(0,0,0,0.8)",
+          data: Array.apply(null, new Array(160)).map(Number.prototype.valueOf, 0)
+        }
+      ]
+    };
+
+    chromosome_chart = new Chart(chromosome).Bar(chromosome_data,
+
+            {
+              scaleBeginAtZero: true, scaleShowGridLines: false, scaleShowHorizontalLines: false,
+              scaleShowVerticalLines: true, barShowStroke: false, barStrokeWidth: 0, barValueSpacing: 0,
+              barDatasetSpacing: 0, responsive: false, animation: false,
+              maintainAspectRatio: true
+
+            });
+
+    $(document).ready(function () {
+
+      $("#re-start").click(function () {
+        setup_worker();
+      });
+
+      setup_worker();
+    });
+
+    var terminate_worker = function () {
+      if (typeof(Worker) !== "undefined") {
+        if (typeof(worker) != "undefined") {
+          worker.terminate();
+        }
+      }
+      document.getElementById('worker_status').textContent = 'Finished';
+
+    };
+
+    var setup_worker = function () {
+      if (typeof(Worker) !== "undefined") {
+        if (typeof(worker) == "undefined") {
+          worker = new Worker('js/trapWorker.js');
+
+        }
+      }
+      worker.count = 0;
+      worker.uuid = generateUUID();
+      worker.addEventListener('message', function (e) {
+        if (e.data.status !== undefined) {
+          switch (e.data.status) {
+            case 'created':
+              document.getElementById('worker_status').textContent = 'Created';
+              break;
+            case 'starting':
+              document.getElementById('worker_status').textContent = 'Starting';
+              break;
+
+            case 'working':
+              document.getElementById('worker_status').textContent = 'Working';
+              if (fitness_data.labels.length > 10) {
+                fitness_chart.removeData();
+              }
+
+              fitness_chart.addData([e.data.fitness], e.data.generation_count);
+              fitness_chart.update();
+
+              for (var i = 0; i < e.data.best.length; i++) {
+                chromosome_chart.datasets[0].bars[i].value = e.data.best[i];
+
+              }
+              chromosome_chart.update();
+              document.getElementById('worker_current_generation').textContent = e.data.generation_count.toString();
+              document.getElementById('worker_current_best').textContent = e.data.fitness;
+              document.getElementById('ips').textContent = e.data.ips + ' User(s) Collaborating';
+              break;
+
+            case 'finished':
+
+              if (worker.count == 0) {
+                for (var i = 0; i < e.data.best.length; i++) {
+                  chromosome_chart.datasets[0].bars[i].value = e.data.best[i];
+
+                }
+                chromosome_chart.update();
+                document.getElementById('worker_current_generation').textContent = e.data.generation_count.toString();
+                document.getElementById('worker_current_best').textContent = e.data.fitness;
+                fitness_chart.addData([e.data.fitness], e.data.generation_count);
+                fitness_chart.update();
+                document.getElementById('worker_status').textContent = 'Finished';
+                document.getElementById('number_of_solutions_found').textContent = parseInt(document.getElementById('number_of_solutions_found').textContent) + 1;
+                setTimeout(setup_worker, 20000);
+                console.log('finished' + worker.count++);
+
+              }
+
+              break;
+            case 'no_work':
+              document.getElementById('worker_status').textContent = 'no_work';
+              break;
+            default:
+          }
+
+        }
+
+      }, false);
+      var config = {
+
+        population_size: get_random_population(128, 256),
+        period: 100,
+        traps: 40,
+        trap_len: 4,
+        trap_b: 2
+      };
+
+      // Random poulatio between min and max
+      function get_random_population(population_min, population_max) {
+
+        pop_size = Math.floor((Math.random() * (population_max - population_min)) + population_min);
+        //population has to be an even number?
+        if (pop_size % 2 == 1) {
+          pop_size++;
+        }
+        return pop_size;
+
+      }
+
+      document.getElementById('worker_population_size').textContent = config.population_size;
+      config.worker_uuid = worker.uuid;
+
+      worker.postMessage({'cmd': 'start', 'config': config});
+      worker.postMessage({'cmd': 'evolve'});
+
+      function generateUUID() {
+        var d = new Date().getTime();
+        var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+          var r = (d + Math.random() * 16) % 16 | 0;
+          d = Math.floor(d / 16);
+          return (c == 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+        });
+        return uuid;
+      }
+
+    }
